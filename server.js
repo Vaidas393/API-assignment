@@ -1,47 +1,40 @@
-require('dotenv').config()
-const express = require('express')
-const mongoose = require('mongoose')
-const proudctRoute = require('./routes/productRoute');
-const errorMiddleware = require('./middleware/errorMiddleware')
-var cors = require('cors')
+require("dotenv").config();
 
-const app = express()
+const express = require("express");
+const cors = require("cors");
 
-const PORT = process.env.PORT || 3000
-const MONGO_URL = process.env.MONGO_URL
-const FRONTEND = process.env.FRONTEND
+const connectDB = require("./config/db");
+const userRoutes = require("./routes/users");
+const errorHandler = require("./middlewares/error");
 
-var corsOptions = {
-    origin: FRONTEND,
-    optionsSuccessStatus: 200 // some legacy browsers (IE11, various SmartTVs) choke on 204
-}
 
-app.use(cors(corsOptions))
-app.use(express.json())
-app.use(express.urlencoded({extended: false}))
+// Connect to DB
+connectDB();
 
-//routes
+// Express App
+const app = express();
+const port = process.env.PORT || 5000;
 
-app.use('/api/products', proudctRoute);
+// middlewares
+app.use(cors());
+app.use(express.json());
 
-app.get('/', (req, res) => {
-    res.send('Hello NODE API')
-})
+// Routes
+app.use("/api/users", userRoutes);
 
-app.get('/blog', (req, res) => {
-    res.send('Hello Blog, My name is Devtamin')
-})
+app.use("/", (req, res) => {
+  return res.json({
+    message: "Welcome to the Node.js REST API using ExpressJS and MongoDB"
+  });
+});
 
-app.use(errorMiddleware);
+app.use(errorHandler);
 
-mongoose.set("strictQuery", false)
-mongoose.
-connect(MONGO_URL)
-.then(() => {
-    console.log('connected to MongoDB')
-    app.listen(PORT, ()=> {
-        console.log(`Node API app is running on port ${PORT}`)
-    });
-}).catch((error) => {
-    console.log(error)
-})
+const server = app.listen(port, () =>
+  console.log(`Server started listening on ${port}`)
+);
+
+process.on("unhandledRejection", (error, promise) => {
+  console.log(`Logged Error: ${error}`);
+  server.close(() => process.exit(1));
+});
